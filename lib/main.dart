@@ -1,3 +1,4 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -105,38 +106,56 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            MarkdownBody(data: _content),
-            Container(
-              alignment: Alignment.center,
-              child: adWidget,
-              width: _bannerAd.size.width.toDouble(),
-              // height: _bannerAd.size.height.toDouble(),
-              height: 72.0,
+      body: Builder(
+        builder: (context) {
+          final double height = MediaQuery.of(context).size.height;
+          return CarouselSlider.builder(
+            itemCount: 2,
+            options: CarouselOptions(
+              height: height,
+              viewportFraction: 1.0,
+              enlargeCenterPage: false,
+              // autoPlay: false,
             ),
-          ],
-        ),
+            itemBuilder: (ctx, index, realIdx) {
+              // TODO: read file to data
+              return MarkdownBody(
+                  data: '# ' + index.toString() + '\n' + _content);
+            },
+          );
+        },
       ),
+      bottomSheet: Container(
+        alignment: Alignment.center,
+        child: adWidget,
+        // width: _bannerAd.size.width.toDouble(),
+        // height: _bannerAd.size.height.toDouble(),
+        height: 72.0,
+      ),
+      // Center(
+      //   // Center is a layout widget. It takes a single child and positions it
+      //   // in the middle of the parent.
+      //   child: Column(
+      //     // Column is also a layout widget. It takes a list of children and
+      //     // arranges them vertically. By default, it sizes itself to fit its
+      //     // children horizontally, and tries to be as tall as its parent.
+      //     //
+      //     // Invoke "debug painting" (press "p" in the console, choose the
+      //     // "Toggle Debug Paint" action from the Flutter Inspector in Android
+      //     // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+      //     // to see the wireframe for each widget.
+      //     //
+      //     // Column has various properties to control how it sizes itself and
+      //     // how it positions its children. Here we use mainAxisAlignment to
+      //     // center the children vertically; the main axis here is the vertical
+      //     // axis because Columns are vertical (the cross axis would be
+      //     // horizontal).
+
+      //     mainAxisAlignment: MainAxisAlignment.start,
+      //     children: <Widget>[
+      //     ],
+      //   ),
+      // ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showFile,
         tooltip: 'Increment',
