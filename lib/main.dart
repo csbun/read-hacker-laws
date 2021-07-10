@@ -1,5 +1,7 @@
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:read_hacker_laws/ad_helper.dart';
 
 void main() {
@@ -50,36 +52,40 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
+  String _content = '';
   late BannerAd _bannerAd;
 
   @override
   void initState() {
     super.initState();
-    _bannerAd = BannerAd(
-      size: AdSize.banner,
-      // adUnitId: 'ca-app-pub-6414613701003177/6350644870',
-      adUnitId: AdHelper.bannerAdUnitId,
-      listener: BannerAdListener(onAdLoaded: (Ad ad) {
-        print('$BannerAd loaded.');
-      }, onAdFailedToLoad: (Ad ad, error) {
-        ad.dispose();
-        print('Ad load failed (code=${error.code} message=${error.message})');
-      }),
-      request: AdRequest(),
-    );
-    _bannerAd.load();
+    if (AdHelper.bannerAdUnitId != '') {
+      _bannerAd = BannerAd(
+        size: AdSize.banner,
+        // adUnitId: 'ca-app-pub-6414613701003177/6350644870',
+        adUnitId: AdHelper.bannerAdUnitId,
+        listener: BannerAdListener(onAdLoaded: (Ad ad) {
+          print('$BannerAd loaded.');
+        }, onAdFailedToLoad: (Ad ad, error) {
+          ad.dispose();
+          print('Ad load failed (code=${error.code} message=${error.message})');
+        }),
+        request: AdRequest(),
+      );
+      _bannerAd.load();
+    }
   }
 
-  void _incrementCounter() {
+  Future<String> _readResourceFileToString(String filename) async {
+    final contents = await rootBundle.loadString('assets/$filename');
+    // final file = File('${directory.path}/lib/resources/$filename');
+    // final contents = await file.readAsString();
+    return contents;
+  }
+
+  void _showFile() async {
+    final fileString = await _readResourceFileToString('test.md');
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _content = fileString;
     });
   }
 
@@ -117,15 +123,10 @@ class _MyHomePageState extends State<MyHomePage> {
           // center the children vertically; the main axis here is the vertical
           // axis because Columns are vertical (the cross axis would be
           // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
+
+          mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
+            MarkdownBody(data: _content),
             Container(
               alignment: Alignment.center,
               child: adWidget,
@@ -137,7 +138,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: _showFile,
         tooltip: 'Increment',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
