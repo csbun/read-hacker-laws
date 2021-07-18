@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/material.dart';
@@ -5,9 +6,15 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:read_hacker_laws/ad_helper.dart';
 
-void main() {
+late Map<String, dynamic> resourceMeta;
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
+  String resourcesMetaString = await rootBundle.loadString("s/index.json");
+  resourceMeta = json.decode(resourcesMetaString);
+  // resourceMeta = await rootBundle.loadStructuredData<Map<String, int>>(
+  //     "s/index.json", (s) => json.decode(s));
   runApp(MyApp());
 }
 
@@ -16,7 +23,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Hacker Laws',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -29,7 +36,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Hacker Laws'),
     );
   }
 }
@@ -53,12 +60,18 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _content = '';
+  late String _lang = "en";
+  late String _content = '';
+  late int _pageCount = 0;
   late BannerAd _bannerAd;
 
   @override
   void initState() {
     super.initState();
+    // 加载数据
+    _pageCount = resourceMeta[_lang] ?? 0;
+
+    // 加载广告
     if (AdHelper.bannerAdUnitId != '') {
       _bannerAd = BannerAd(
         size: AdSize.banner,
@@ -76,23 +89,39 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<String> _readResourceFileToString(String filename) async {
-    final contents = await rootBundle.loadString('assets/$filename');
+  Future<String> _readMarkdown(int fileNum) async {
+    final preFileName =
+        "00" + (fileNum > _pageCount ? _pageCount : fileNum).toString();
+    final fileName = preFileName.substring(preFileName.length - 2);
+    final contents = await rootBundle.loadString('s/$_lang/$fileName');
     // final file = File('${directory.path}/lib/resources/$filename');
     // final contents = await file.readAsString();
     return contents;
   }
 
+  futureMarkdownBuilder(int fileNum) {
+    return FutureBuilder(
+      future: _readMarkdown(fileNum),
+      builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+        /*表示数据成功返回*/
+        if (snapshot.hasData) {
+          return Markdown(data: snapshot.data ?? "");
+        } else {
+          return Text("Loading");
+        }
+      },
+    );
+  }
+
   void _showFile() async {
-    final fileString = await _readResourceFileToString('test.md');
     setState(() {
-      _content = fileString;
+      _content = "fileString";
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final AdWidget adWidget = AdWidget(ad: _bannerAd);
+    // final AdWidget adWidget =
 
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
@@ -110,24 +139,32 @@ class _MyHomePageState extends State<MyHomePage> {
         builder: (context) {
           final double height = MediaQuery.of(context).size.height;
           return CarouselSlider.builder(
-            itemCount: 2,
+            itemCount: _pageCount,
             options: CarouselOptions(
               height: height,
               viewportFraction: 1.0,
               enlargeCenterPage: false,
+              // onPageChanged: (index, reason) async {
+              //   setState(() {
+              //     _content = '';
+              //   });
+              //   final fileString = await _readMarkdown(index);
+              //   setState(() {
+              //     _content = fileString;
+              //   });
+              // },
               // autoPlay: false,
             ),
             itemBuilder: (ctx, index, realIdx) {
-              // TODO: read file to data
-              return MarkdownBody(
-                  data: '# ' + index.toString() + '\n' + _content);
+              return futureMarkdownBuilder(index);
+              // return MarkdownBody(data: _content);
             },
           );
         },
       ),
       bottomSheet: Container(
         alignment: Alignment.center,
-        child: adWidget,
+        child: AdHelper.bannerAdUnitId != '' ? AdWidget(ad: _bannerAd) : null,
         // width: _bannerAd.size.width.toDouble(),
         // height: _bannerAd.size.height.toDouble(),
         height: 72.0,
