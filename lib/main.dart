@@ -1,20 +1,19 @@
-import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:read_hacker_laws/ad_helper.dart';
+import 'package:read_hacker_laws/local_store.dart';
+import 'package:read_hacker_laws/md_assets.dart';
 
-late Map<String, dynamic> resourceMeta;
+const double APP_BAR_HEIGHT = 40.0;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
-  String resourcesMetaString = await rootBundle.loadString("s/index.json");
-  resourceMeta = json.decode(resourcesMetaString);
-  // resourceMeta = await rootBundle.loadStructuredData<Map<String, int>>(
-  //     "s/index.json", (s) => json.decode(s));
+  await LocalStore.init();
+  await MdAssets.init();
   runApp(MyApp());
 }
 
@@ -60,69 +59,41 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late String _lang = "en";
-  late String _content = '';
-  late int _pageCount = 0;
+  late String _lang = LocalStore.getLang();
   late BannerAd _bannerAd;
 
   @override
   void initState() {
     super.initState();
-    // 加载数据
-    _pageCount = resourceMeta[_lang] ?? 0;
-
     // 加载广告
     if (AdHelper.bannerAdUnitId != '') {
-      _bannerAd = BannerAd(
-        size: AdSize.banner,
-        // adUnitId: 'ca-app-pub-6414613701003177/6350644870',
-        adUnitId: AdHelper.bannerAdUnitId,
-        listener: BannerAdListener(onAdLoaded: (Ad ad) {
-          print('$BannerAd loaded.');
-        }, onAdFailedToLoad: (Ad ad, error) {
-          ad.dispose();
-          print('Ad load failed (code=${error.code} message=${error.message})');
-        }),
-        request: AdRequest(),
-      );
-      _bannerAd.load();
+      _bannerAd = AdHelper.buildBannerAd();
     }
-  }
-
-  Future<String> _readMarkdown(int fileNum) async {
-    final preFileName =
-        "00" + (fileNum > _pageCount ? _pageCount : fileNum).toString();
-    final fileName = preFileName.substring(preFileName.length - 2);
-    final contents = await rootBundle.loadString('s/$_lang/$fileName');
-    // final file = File('${directory.path}/lib/resources/$filename');
-    // final contents = await file.readAsString();
-    return contents;
   }
 
   futureMarkdownBuilder(int fileNum) {
     return FutureBuilder(
-      future: _readMarkdown(fileNum),
+      future: MdAssets.readFile(_lang, fileNum),
       builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-        /*表示数据成功返回*/
+        // 表示数据成功返回
         if (snapshot.hasData) {
           return Markdown(data: snapshot.data ?? "");
         } else {
-          return Text("Loading");
+          return SpinKitWave(color: Colors.blue);
         }
       },
     );
   }
 
-  void _showFile() async {
-    setState(() {
-      _content = "fileString";
-    });
-  }
+  // void _switchLang() async {
+  //   String nl = _lang == MdAssetsLang.EN ? MdAssetsLang.CN : MdAssetsLang.EN;
+  //   setState(() {
+  //     _lang = nl;
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
-    // final AdWidget adWidget =
-
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -130,29 +101,52 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
+      // // AppBar 高度也计算在下面 body size.height 之内
       appBar: AppBar(
+        toolbarHeight: APP_BAR_HEIGHT,
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
+        actions: [
+          PopupMenuButton<String>(
+              icon: Icon(Icons.translate),
+              onSelected: (String lang) async {
+                setState(() {
+                  _lang = lang;
+                });
+                await LocalStore.setLang(lang);
+              },
+              itemBuilder: (BuildContext bc) => <PopupMenuEntry<String>>[
+                    const PopupMenuItem(
+                        value: MdAssetsLang.EN, child: Text("English")),
+                    const PopupMenuItem(
+                        value: MdAssetsLang.CN, child: Text("中文"))
+                  ])
+        ],
       ),
       body: Builder(
         builder: (context) {
-          final double height = MediaQuery.of(context).size.height;
+          final double height = MediaQuery.of(context).size.height -
+              AdHelper.BANNER_HEIGHT -
+              APP_BAR_HEIGHT;
           return CarouselSlider.builder(
-            itemCount: _pageCount,
+            itemCount: MdAssets.getPageCount(_lang),
             options: CarouselOptions(
               height: height,
               viewportFraction: 1.0,
               enlargeCenterPage: false,
-              // onPageChanged: (index, reason) async {
-              //   setState(() {
-              //     _content = '';
-              //   });
-              //   final fileString = await _readMarkdown(index);
-              //   setState(() {
-              //     _content = fileString;
-              //   });
-              // },
+              enableInfiniteScroll: false,
+              initialPage: LocalStore.getPage(),
+              onPageChanged: (index, reason) async {
+                await LocalStore.setPage(index);
+                // setState(() {
+                //   _content = '';
+                // });
+                // final fileString = await _readMarkdown(index);
+                // setState(() {
+                //   _content = fileString;
+                // });
+              },
               // autoPlay: false,
             ),
             itemBuilder: (ctx, index, realIdx) {
@@ -167,7 +161,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: AdHelper.bannerAdUnitId != '' ? AdWidget(ad: _bannerAd) : null,
         // width: _bannerAd.size.width.toDouble(),
         // height: _bannerAd.size.height.toDouble(),
-        height: 72.0,
+        height: AdHelper.BANNER_HEIGHT,
       ),
       // Center(
       //   // Center is a layout widget. It takes a single child and positions it
@@ -193,11 +187,10 @@ class _MyHomePageState extends State<MyHomePage> {
       //     ],
       //   ),
       // ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showFile,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _switchLang,
+      //   child: Icon(Icons.menu),
+      // ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
