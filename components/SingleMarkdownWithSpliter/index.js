@@ -1,6 +1,6 @@
 import React, {useState, useCallback, useEffect} from 'react';
 import type {Node} from 'react';
-import {StyleSheet, View, ScrollView, Dimensions} from 'react-native';
+import {StyleSheet, View, ScrollView, Dimensions, Linking} from 'react-native';
 import Carousel from 'react-native-snap-carousel';
 import Markdown from 'react-native-markdown-display';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,8 +10,13 @@ const SLIDER_WIDTH = Dimensions.get('window').width;
 const LAST_READ_KEY = '@SingleMarkdownWithSpliter:LastRead';
 
 const styles = StyleSheet.create({
-  reader: {
+  markdownView: {
     padding: 10,
+    paddingBottom: 80,
+  },
+  markdownDisplay: {
+    paragraph: {lineHeight: 20},
+    heading3: {lineHeight: 40, fontWeight: 'bold'},
   },
 });
 
@@ -20,11 +25,23 @@ const Slider = ({children}): Node => {
   const [loading, setLoading] = useState(true);
   const [mdList, setMdList] = useState([]);
 
+  const _onLinkPress = useCallback(url => {
+    if (url.startsWith('http')) {
+      // open url in browser
+      Linking.openURL(url);
+    } else {
+      // TODO: navigate to page
+      console.log(url);
+    }
+  }, []);
+
   const _renderItem = useCallback(({item}) => {
     return (
       <ScrollView contentInsetAdjustmentBehavior="automatic">
-        <View style={styles.reader}>
-          <Markdown>{item.content || ''}</Markdown>
+        <View style={styles.markdownView}>
+          <Markdown style={styles.markdownDisplay} onLinkPress={_onLinkPress}>
+            {item.content || ''}
+          </Markdown>
         </View>
       </ScrollView>
     );

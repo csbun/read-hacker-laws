@@ -7,10 +7,10 @@
  */
 import React from 'react';
 import type {Node} from 'react';
-import {StatusBar, useColorScheme, View} from 'react-native';
+import {useColorScheme, View} from 'react-native';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import Reader from './components/Reader';
-import {Header} from 'react-native-elements';
+import {ThemeProvider, Header} from 'react-native-elements';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 const App: () => Node = () => {
@@ -22,18 +22,20 @@ const App: () => Node = () => {
 
   return (
     <SafeAreaProvider>
-      <Header centerComponent={{text: 'Reader', style: {color: '#fff'}}} />
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <View
-        style={{
-          backgroundColor: isDarkMode ? Colors.black : Colors.white,
-        }}>
-        <Reader />
-      </View>
-      {/* <ScrollView
+      <ThemeProvider>
+        <Header centerComponent={{text: 'Reader', style: {color: '#fff'}}} />
+        {/* <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} /> */}
+        <View
+          style={{
+            backgroundColor: isDarkMode ? Colors.black : Colors.white,
+          }}>
+          <Reader />
+        </View>
+        {/* <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         style={backgroundStyle}>
       </ScrollView> */}
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 };
