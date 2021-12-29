@@ -4,7 +4,7 @@ import {MarkdownType} from '../models/Setting';
 import SingleMarkdownWithSpliter from './SingleMarkdownWithSpliter';
 import MultiRemoteMarkdown from './MultiRemoteMarkdown';
 
-const Reader = ({children}): Node => {
+const Reader = (): Node => {
   // const [mdType, setMdType] = React.useState(
   //   MarkdownType.SingleFileWithSpliter,
   // );

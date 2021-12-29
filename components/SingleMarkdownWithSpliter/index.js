@@ -1,10 +1,12 @@
-import React, {useState, useCallback, useEffect} from 'react';
+import React, {useState, useContext, useCallback, useEffect} from 'react';
 import type {Node} from 'react';
 import {StyleSheet, View, ScrollView, Dimensions, Linking} from 'react-native';
 import Carousel from 'react-native-snap-carousel';
 import Markdown from 'react-native-markdown-display';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SettingsContext from '../../context/SettingsContext';
 import Loading from '../Loading';
+import {LANG_EN} from '../../models/Language';
 
 const SLIDER_WIDTH = Dimensions.get('window').width;
 const LAST_READ_KEY = '@SingleMarkdownWithSpliter:LastRead';
@@ -25,6 +27,8 @@ const Slider = ({children}): Node => {
   const [loading, setLoading] = useState(true);
   const [mdList, setMdList] = useState([]);
 
+  const settings = useContext(SettingsContext);
+
   const _onLinkPress = useCallback(url => {
     if (url.startsWith('http')) {
       // open url in browser
@@ -35,30 +39,38 @@ const Slider = ({children}): Node => {
     }
   }, []);
 
-  const _renderItem = useCallback(({item}) => {
-    return (
-      <ScrollView contentInsetAdjustmentBehavior="automatic">
-        <View style={styles.markdownView}>
-          <Markdown style={styles.markdownDisplay} onLinkPress={_onLinkPress}>
-            {item.content || ''}
-          </Markdown>
-        </View>
-      </ScrollView>
-    );
-  }, []);
+  const _renderItem = useCallback(
+    ({item}) => {
+      return (
+        <ScrollView contentInsetAdjustmentBehavior="automatic">
+          <View style={styles.markdownView}>
+            <Markdown style={styles.markdownDisplay} onLinkPress={_onLinkPress}>
+              {item.content || ''}
+            </Markdown>
+          </View>
+        </ScrollView>
+      );
+    },
+    [_onLinkPress],
+  );
 
   const _onSnapToItem = useCallback(index => {
     AsyncStorage.setItem(LAST_READ_KEY, index.toString()).then(() => {
-      console.log('_onSnapToItem:', index);
+      // console.log('_onSnapToItem:', index);
     });
   }, []);
 
   useEffect(() => {
+    // TODO: global loading in context?
     setLoading(true);
-    fetch(
-      // 'https://raw.githubusercontent.com/nusr/hacker-laws-zh/master/README.md'
-      'https://raw.fastgit.org/nusr/hacker-laws-zh/master/README.md',
-    )
+
+    // TODO: move url to config or settings
+    const URL =
+      settings.lang === LANG_EN
+        ? 'https://raw.githubusercontent.com/dwmkerr/hacker-laws/main/README.md'
+        : 'https://raw.fastgit.org/nusr/hacker-laws-zh/master/README.md';
+
+    fetch(URL)
       .then(response => response.text())
       .then(text => {
         const list = text
@@ -70,10 +82,8 @@ const Slider = ({children}): Node => {
       })
       .then(lastRead => {
         const lastReadNumber = lastRead ? parseInt(lastRead, 10) : 0;
-        if (this._carousel) {
-          // console.log('this._carousel.snapToItem(lastReadNumber);');
-          this._carousel.snapToItem(lastReadNumber);
-        }
+        // console.log('this._carousel.snapToItem(lastReadNumber);');
+        this?._carousel?.snapToItem(lastReadNumber);
         setFirstItem(lastReadNumber);
         setLoading(false);
       })
@@ -81,7 +91,7 @@ const Slider = ({children}): Node => {
         setLoading(false);
         console.log('error: ----------------->', error);
       });
-  }, [setLoading, setFirstItem, setMdList]);
+  }, [settings.lang, setLoading, setFirstItem, setMdList]);
 
   if (loading) {
     return <Loading />;
@@ -91,7 +101,9 @@ const Slider = ({children}): Node => {
   return (
     <Carousel
       ref={c => {
-        this._carousel = c;
+        if (this && c) {
+          this._carousel = c;
+        }
       }}
       // activeSlideAlignment={'start'}
       inactiveSlideScale={1}
