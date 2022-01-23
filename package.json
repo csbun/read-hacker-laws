@@ -10,13 +10,19 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@eva-design/eva": "^2.1.1",
     "@react-native-async-storage/async-storage": "^1.15.13",
-    "react": "17.0.2",
+    "@react-navigation/native": "^6.0.6",
+    "@react-navigation/native-stack": "^6.2.5",
+    "@ui-kitten/components": "^5.1.1",
+    "@ui-kitten/eva-icons": "^5.1.1",
+    "react": "^17.0.2",
     "react-native": "0.66.3",
-    "react-native-elements": "^3.4.2",
-    "react-native-markdown-display": "^7.0.0-alpha.2",
+    "react-native-markdown-display": "github:FreeiamHQ/react-native-markdown-display",
     "react-native-safe-area-context": "^3.3.2",
+    "react-native-screens": "^3.10.2",
     "react-native-snap-carousel": "^3.9.1",
+    "react-native-svg": "^12.1.1",
     "react-native-vector-icons": "^9.0.0"
   },
   "devDependencies": {

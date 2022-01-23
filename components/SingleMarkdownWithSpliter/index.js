@@ -9,7 +9,7 @@ import Loading from '../Loading';
 import {LANG_EN} from '../../models/Language';
 
 const SLIDER_WIDTH = Dimensions.get('window').width;
-const LAST_READ_KEY = '@SingleMarkdownWithSpliter:LastRead';
+const LAST_READ_KEY = '@SingleMarkdownWithSplitter:LastRead';
 
 const styles = StyleSheet.create({
   markdownView: {
